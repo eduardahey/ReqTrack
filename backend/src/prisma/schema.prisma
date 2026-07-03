@@ -1,0 +1,204 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members  WorkspaceMember[]
+  projects Project[]
+  invites  WorkspaceInvite[]
+}
+
+model User {
+  id              String    @id @default(cuid())
+  name            String
+  email           String    @unique
+  password        String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  workspaces WorkspaceMember[]
+}
+
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  role        String   @default("MEMBER") // ADMIN | MEMBER
+  isOwner     Boolean  @default(false) // usuário root que criou o workspace — cargo não pode ser alterado nem removido
+  createdAt   DateTime @default(now())
+
+  userId      String
+  workspaceId String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+}
+
+model WorkspaceInvite {
+  id        String   @id @default(cuid())
+  email     String
+  role      String   @default("MEMBER") // ADMIN | MEMBER
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, email])
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspaceId  String
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  requirements Requirement[]
+  stakeholders Stakeholder[]
+  userStories  UserStory[]
+  meetings     Meeting[]
+  activities   Activity[]
+}
+
+model Requirement {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  type        String   // FUNCTIONAL | NON_FUNCTIONAL
+  priority    String   @default("MEDIUM") // LOW | MEDIUM | HIGH
+  status      String   @default("OPEN")   // OPEN | IN_PROGRESS | DONE
+  actor       String?  // funcional only
+  category    String?  // non-functional only
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  projectId   String
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userStories UserStory[]
+
+  acceptanceCriteria AcceptanceCriterion[]
+
+  // Outros requisitos que precisam estar concluídos antes deste
+  prerequisites Requirement[] @relation("RequirementPrerequisites")
+  // Requisitos que têm este requisito como pré-requisito
+  requiredBy    Requirement[] @relation("RequirementPrerequisites")
+}
+
+model AcceptanceCriterion {
+  id        String   @id @default(cuid())
+  text      String
+  done      Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  requirementId String?
+  requirement   Requirement? @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  userStoryId String?
+  userStory   UserStory? @relation(fields: [userStoryId], references: [id], onDelete: Cascade)
+}
+
+model Stakeholder {
+  id          String   @id @default(cuid())
+  name        String
+  role        String?
+  department  String?
+  email       String?
+  phone       String?
+  notes       String?
+  tags        String?  // array de strings serializado em JSON, ex: '["PO_PRIORITY","INFLUENCER"]'
+  power       Int      @default(5) // 1-10, eixo vertical da matriz de influência
+  interest    Int      @default(5) // 1-10, eixo horizontal da matriz de influência
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  meetings  Meeting[]
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  type        String   // STAKEHOLDER_ADDED | ...
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model UserStory {
+  id          String   @id @default(cuid())
+  userType    String
+  feature     String
+  benefit     String
+  priority    String   @default("MEDIUM")
+  status      String   @default("OPEN")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  projectId    String
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requirements Requirement[]
+
+  acceptanceCriteria AcceptanceCriterion[]
+}
+
+model Meeting {
+  id           String   @id @default(cuid())
+  title        String
+  date         DateTime
+  summary      String?
+  points       String?
+  decisions    String?
+  tags         String?  // array de strings serializado em JSON, ex: '["Arquitetura","Backend"]'
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  projectId    String
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  participants Stakeholder[]
+}
+
+model VerificationCode {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  type      String   // 'PASSWORD_RESET' | 'EMAIL_VERIFICATION'
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([email, type])
+}
+
+model PendingRegistration {
+  id                    String   @id @default(cuid())
+  email                 String   @unique
+  code                  String
+  expiresAt             DateTime
+  createdAt             DateTime @default(now())
+  workspaceName         String
+  workspaceDescription  String?
+  name                  String
+  hashedPassword        String
+ 
+  @@index([email])
+}

@@ -1,0 +1,40 @@
+# Dependências
+node_modules/
+
+# Variáveis de ambiente (mantém .env.example versionado, se existir)
+.env
+.env.*
+!.env.example
+
+# Build de produção
+dist/
+build/
+.vite/
+
+# Banco de dados local (SQLite)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Cobertura de testes / cache de lint
+coverage/
+.eslintcache
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Editores / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Documentações
+docs/
+
+# Artefatos/exports compactados
+*.zip
