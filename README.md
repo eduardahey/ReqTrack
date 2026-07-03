@@ -1,6 +1,6 @@
-# Requirements Manager
+# Gerenciador de Requisitos
 
-Gerenciador de requisitos de projetos — trabalho acadêmico.
+Gerenciador de requisitos de projetos.
 
 ## Tecnologias
 
@@ -19,7 +19,7 @@ Gerenciador de requisitos de projetos — trabalho acadêmico.
 ### 1. Clonar o repositório
 
 ```bash
-git clone <url-do-repositorio>
+git clone https://github.com/eduardahey/ReqTrack
 cd reqtrack
 ```
 
